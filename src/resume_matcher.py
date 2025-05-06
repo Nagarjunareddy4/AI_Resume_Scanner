@@ -3,8 +3,9 @@ import docx2txt
 import PyPDF2
 import os
 import spacy
+import en_core_web_sm
+nlp = en_core_web_sm.load()
 
-nlp = spacy.load("en_core_web_sm")
 
 def extract_text_from_pdf(path):
     text = ""
