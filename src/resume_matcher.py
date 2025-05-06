@@ -1,40 +1,34 @@
-
-import os
-import docx
-import PyPDF2
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import docx2txt
+import PyPDF2
+import os
+import spacy
 
-def extract_text_from_pdf(filepath):
+nlp = spacy.load("en_core_web_sm")
+
+def extract_text_from_pdf(path):
     text = ""
-    with open(filepath, "rb") as f:
-        reader = PyPDF2.PdfReader(f)
+    with open(path, "rb") as file:
+        reader = PyPDF2.PdfReader(file)
         for page in reader.pages:
-            text += page.extract_text() or ""
+            text += page.extract_text()
     return text
 
-def extract_text_from_docx(filepath):
-    doc = docx.Document(filepath)
-    return '\n'.join([para.text for para in doc.paragraphs])
+def extract_text_from_docx(path):
+    return docx2txt.process(path)
 
-def extract_skills_from_text(text):
-    # A basic list of common skills; you can expand this
-    skills_list = [
-        "python", "java", "c++", "aws", "azure", "docker", "kubernetes",
-        "sql", "nosql", "machine learning", "data science", "flask",
-        "django", "linux", "git", "ci/cd", "html", "css", "javascript"
-    ]
-    found_skills = set()
-    text_lower = text.lower()
-    for skill in skills_list:
-        if skill in text_lower:
-            found_skills.add(skill)
-    return list(found_skills)
+def extract_keywords_from_jd(jd_text):
+    doc = nlp(jd_text)
+    keywords = [chunk.text.lower() for chunk in doc.noun_chunks if len(chunk.text) > 1]
+    return list(set(keywords))
 
 def match_resumes_to_jd(resume_texts, jd_text):
-    documents = [jd_text] + resume_texts
-    tfidf = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf.fit_transform(documents)
-    cosine_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-    return cosine_similarities.tolist()
+    jd_keywords = extract_keywords_from_jd(jd_text)
+    scores = []
+    skill_matches = []
+    for resume in resume_texts:
+        matched_skills = [kw for kw in jd_keywords if kw in resume.lower()]
+        score = len(matched_skills) / len(jd_keywords) if jd_keywords else 0
+        scores.append(score)
+        skill_matches.append(", ".join(set(matched_skills)))
+    return scores, skill_matches
