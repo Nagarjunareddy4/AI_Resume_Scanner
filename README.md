@@ -61,7 +61,8 @@ python gui.py
 ```
 To create a .exe:
 ```
-pyinstaller --onefile --windowed gui.py
+pip install pyinstaller
+pyinstaller --onefile --windowed --exclude-module tensorflow gui.py
 ```
 **✉️ Email Sending Setup**
 
