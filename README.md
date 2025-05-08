@@ -64,6 +64,26 @@ To create a .exe:
 pip install pyinstaller
 pyinstaller --onefile --windowed --exclude-module tensorflow gui.py
 ```
+If you facing any issue while creating exe file, you can run below
+```
+pyinstaller --onefile --exclude-module tensorflow "--add-data=/users/nagar/appdata/local/packages/pythonsoftwarefoundation.python.3.10_qbz5n2kfra8p0/localcache/local-packages/python310/site-packages/en_core_web_sm:en_core_web_sm" gui.py
+```
+You could try to include the entire spacy directory using --add-data. This would make your executable larger but might resolve the issue.
+```
+pyinstaller --onefile --exclude-module tensorflow --add-data "your_python_environment/lib/site-packages/spacy:spacy" your_gui_script.py
+```
+How do you find the path?
+Open your terminal, Run the following command
+```
+pip show en_core_web_sm
+```
+For example, if the "Location:" is /your/python/env/lib/site-packages, then the path you'd use with --add-data would likely be /your/python/env/lib/site-packages/en_core_web_sm
+After that you need to provide source and destination paths like below
+```
+pyinstaller --onefile --exclude-module tensorflow --add-data="/path/to/your/site-packages/en_core_web_sm:en_core_web_sm" your_gui_script.py
+```
+This way you can fix your issue
+
 **✉️ Email Sending Setup**
 
 Uses Gmail SMTP. You must enable “Less secure app access” or use an App Password.
