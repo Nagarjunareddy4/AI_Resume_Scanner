@@ -1201,12 +1201,33 @@
 
     function handleResumeUpload(files) {
       if (!files || files.length === 0) return;
-      
-      resumeFiles = Array.from(files);
+
+      // 🧑 Candidate Mode: allow only ONE resume, no overwrite
+      if (isCandidateMode) {
+        if (resumeFiles.length > 0) {
+          showToast(
+            'Only one resume is allowed in Candidate Mode. Please remove the existing resume and upload again.',
+            'error'
+          );
+          return;
+        }
+
+        // Allow first resume
+        resumeFiles = [files[0]];
+        renderResumeList();
+        checkScanReady();
+        showToast('Resume uploaded successfully', 'success');
+        return;
+      }
+
+      // 👔 Recruiter Mode: APPEND resumes (do NOT overwrite)
+      resumeFiles = resumeFiles.concat(files);
+
       renderResumeList();
       checkScanReady();
-      showToast(`${files.length} resume(s) uploaded successfully`, 'success');
+      showToast(`${files.length} resume(s) added successfully`, 'success');
     }
+
 
     function renderResumeList() {
       const config = window.elementSdk ? window.elementSdk.config : currentThemeConfig;
