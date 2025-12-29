@@ -1345,8 +1345,19 @@
         </div>
       `;
 
-      const tooltipTop = rect.bottom + 20;
-      const tooltipLeft = Math.max(20, Math.min(window.innerWidth - 420, rect.left));
+      // position tooltip; prefer below, but if it overflows viewport place above
+      const tooltipTopDefault = rect.bottom + 20;
+      const tooltipLeftDefault = rect.left;
+      // measure tooltip (after content set)
+      const tooltipRect = tooltip.getBoundingClientRect();
+      let tooltipTop = tooltipTopDefault;
+      // if tooltip bottom would overflow viewport, place it above the element
+      if (tooltipTop + tooltipRect.height > window.innerHeight - 20) {
+        tooltipTop = rect.top - tooltipRect.height - 20;
+        if (tooltipTop < 20) tooltipTop = 20;
+      }
+      // keep tooltip within horizontal bounds with 20px padding
+      const tooltipLeft = Math.max(20, Math.min(window.innerWidth - tooltipRect.width - 20, tooltipLeftDefault));
       tooltip.style.top = `${tooltipTop}px`;
       tooltip.style.left = `${tooltipLeft}px`;
     }
