@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resume Scanner</title>
+  <title>AI Resume Scanner</title>
   <script src="/_sdk/data_sdk.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -213,7 +213,7 @@
       <svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg></button>
     </div>
-    <h1 id="appTitle" class="text-5xl font-bold mb-2">Resume Scanner</h1>
+    <h1 id="appTitle" class="text-5xl font-bold mb-2">AI Resume Scanner</h1>
     <p id="subtitle" class="text-xl">AI-Powered Resume Matching</p>
     <div class="mt-4"><label class="inline-flex items-center cursor-pointer"> <input type="checkbox" id="candidateMode" class="sr-only peer">
       <div class="relative w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div><span id="candidateModeLabel" class="ms-3 text-sm font-medium">Candidate Mode</span> </label>
@@ -285,6 +285,10 @@
      </div>
     </div>
    </div>
+   <!-- Embedded Footer -->
+    <div class="text-center py-3 text-sm text-gray-500">
+      © <span id="currentYear"></span> NG Technologies| AI Resume Scanner. All rights reserved.
+    </div>
   </div>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -297,7 +301,7 @@
       secondary_action_color: "#64748b",
       font_family: "system-ui",
       font_size: 16,
-      app_title: "Resume Scanner",
+      app_title: "AI Resume Scanner",
       subtitle: "AI-Powered Resume Matching",
       jd_upload_label: "Upload Job Description",
       resume_upload_label: "Upload Resumes",
@@ -305,7 +309,7 @@
       candidate_mode_label: "Candidate Mode",
       results_title: "Scan Results",
       export_button_text: "Download CSV",
-      tour_welcome_title: "Welcome to Resume Scanner!",
+      tour_welcome_title: "Welcome to AI Resume Scanner!",
       tour_welcome_message: "Let's take a quick tour of the features"
     };
 
@@ -1215,7 +1219,7 @@
     function endTour() {
       document.getElementById('tourOverlay').classList.add('hidden');
       localStorage.setItem('resume_scanner_tour_completed', 'true');
-      showToast('Tour completed! Enjoy using Resume Scanner!', 'success');
+      showToast('Tour completed! Enjoy using AI Resume Scanner!', 'success');
     }
 
     window.nextTourStep = nextTourStep;
@@ -1253,5 +1257,9 @@
       }
     }, 1000);
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b4fcd08305b84d1',t:'MTc2NjkxMTczMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b4fcd08305b84d1',t:'MTc2NjkxMTczMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+ <script>
+  document.getElementById("currentYear").textContent = new Date().getFullYear();
+ </script>
+ </body>
 </html>
