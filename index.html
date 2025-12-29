@@ -1,12 +1,75 @@
 <!doctype html>
 <html lang="en" class="h-full">
- <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Resume Scanner</title>
+
+  <!-- Primary SEO -->
+  <title>AI Resume Scanner | Free Resume Skill Matcher (Recruiter & Candidate Mode)</title>
+  <meta name="description"
+        content="Free AI Resume Scanner to match resumes with job descriptions. Analyze skills, get match scores, and download results instantly. No signup. No data stored. 100% privacy." />
+
+  <meta name="keywords"
+        content="resume scanner, ai resume scanner, free resume scanner, resume skill matcher, resume vs job description, ats resume scanner, resume analyzer, recruiter resume scanner, candidate resume feedback" />
+
+  <meta name="author" content="NG Technologies" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph (LinkedIn / Facebook) -->
+  <meta property="og:title"
+        content="AI Resume Scanner – Free, Secure & Private Resume Matching Tool" />
+  <meta property="og:description"
+        content="Compare resumes with job descriptions using AI. Works fully in your browser. No data stored. Free alternative to paid resume scanners." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https:/airesumescanner.nagarjunareddy.in/" />
+  <meta property="og:image"
+        content="https:/airesumescanner.nagarjunareddy.in/seo-preview.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title"
+        content="AI Resume Scanner – Free Resume Skill Matcher" />
+  <meta name="twitter:description"
+        content="Free AI-powered resume scanner with recruiter & candidate modes. No signup. No data stored." />
+  <meta name="twitter:image"
+        content="https:/airesumescanner.nagarjunareddy.in//seo-preview.png" />
+
+  <!-- Performance & UX -->
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="application-name" content="AI Resume Scanner" />
+
+  <!-- Security & Trust -->
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- 🔷 Structured Data: SoftwareApplication (SEO Bonus) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AI Resume Scanner",
+    "url": "https://airesumescanner.nagarjunareddy.in/",
+    "operatingSystem": "Web",
+    "applicationCategory": "BusinessApplication",
+    "description": "Free AI Resume Scanner to match resumes with job descriptions. Runs fully in the browser with no data stored and complete privacy.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "NG Technologies"
+    }
+  }
+  </script>
+  <!-- 🔷 End Structured Data -->
+
+
+  <!-- Existing scripts -->
   <script src="/_sdk/data_sdk.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
@@ -289,6 +352,46 @@
     <div class="text-center py-3 text-sm text-gray-500">
       © <span id="currentYear"></span> NG Technologies| AI Resume Scanner. All rights reserved.
     </div>
+    <!-- Privacy & Trust Gate Modal -->
+    <div id="privacyGate" class="fixed inset-0 z-[99999] flex items-center justify-center hidden">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
+
+      <div class="relative max-w-2xl w-full mx-4 p-8 rounded-2xl shadow-2xl bg-white dark:bg-slate-800">
+        <h2 class="text-3xl font-bold mb-4 text-center">
+          Why use <span class="text-blue-600">AI Resume Scanner</span>?
+        </h2>
+
+        <div class="space-y-4 text-lg leading-relaxed">
+          <p>
+            🔒 <strong class="text-green-600">Security:</strong>
+            Your files never leave your browser.
+          </p>
+
+          <p>
+            🕵️ <strong class="text-green-600">Privacy:</strong>
+            No resumes, job descriptions, or results are sent to any server.
+          </p>
+
+          <p>
+            💾 <strong class="text-green-600">No Data Stored:</strong>
+            Every scan is fresh. Nothing is saved after you close the page.
+          </p>
+
+          <p>
+            💸 <strong class="text-green-600">100% Free:</strong>
+            Unlike many online tools that charge high subscription fees, this tool is completely free to use.
+          </p>
+        </div>
+
+        <div class="mt-8 text-center">
+          <button
+            id="acceptPrivacyGate"
+            class="px-8 py-3 rounded-lg text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -462,6 +565,24 @@
         sdkInitialized = false;
       }
     }
+
+    function showPrivacyGateIfNeeded() {
+      const hasAccepted = localStorage.getItem('resume_scanner_privacy_accepted');
+      if (!hasAccepted) {
+        document.getElementById('privacyGate').classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // prevent scrolling
+      }
+    }
+
+    function closePrivacyGate() {
+      localStorage.setItem('resume_scanner_privacy_accepted', 'true');
+      document.getElementById('privacyGate').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('acceptPrivacyGate')
+      .addEventListener('click', closePrivacyGate);
+
 
     async function onConfigChange(config) {
       const customFont = config.font_family || currentThemeConfig.font_family || defaultConfig.font_family;
@@ -1250,6 +1371,7 @@
     detectTheme();
     initApp();
     applyModeStyles();
+    showPrivacyGateIfNeeded();
     
     setTimeout(() => {
       if (!localStorage.getItem('resume_scanner_tour_completed')) {
