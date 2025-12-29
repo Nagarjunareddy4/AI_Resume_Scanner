@@ -83,6 +83,23 @@ function renderCandidateSuggestions(container) {
       `}
     </div>
   `;
+
+  // Optional, non-blocking AI: suggestions (Candidate Mode only)
+  (async () => {
+    try {
+      const cfg = window.aiConfig || {};
+      if (!cfg.enabled || !(cfg.features && cfg.features.suggestions)) return;
+
+      // Use missing skills and job description; do not require resume text to avoid changing core scan flow
+      const suggestions = await window.getAISuggestions('', missingSkills, jdText || '', { /* options */ });
+      if (suggestions && Object.keys(suggestions.suggestions || {}).length > 0) {
+        // store in-memory only; do not persist or change UI automatically
+        latestScan.ai_suggestions = suggestions;
+      }
+    } catch (e) {
+      // swallow errors (must not break UI)
+    }
+  })();
 }
 
 function renderAllResults(container) {
@@ -124,6 +141,40 @@ function renderAllResults(container) {
       }).join('')}
     </div>
   `;
+
+  // Optional non-blocking AI calls for top results (do not block UI or modify saved data)
+  (async () => {
+    try {
+      const cfg = window.aiConfig || {};
+      if (!cfg.enabled) return;
+      if (!(cfg.features && (cfg.features.explainScore || cfg.features.atsReview))) return;
+
+      const topResults = sortedData.slice(0, 3);
+      for (const r of topResults) {
+        try {
+          // compute skill match percent where possible
+          const totalSkills = r.total_skills || 0;
+          const matchedCount = r.matched_skills ? r.matched_skills.split(', ').filter(Boolean).length : 0;
+          const skillMatchPercent = totalSkills ? Math.round((matchedCount / totalSkills) * 100) : 0;
+
+          if (cfg.features.explainScore) {
+            const explanation = await window.getAIScoreExplanation(r.match_score, skillMatchPercent, r.ats_score || null);
+            if (explanation) r.ai_explanation = explanation; // in-memory only
+          }
+
+          if (cfg.features.atsReview && (r.ats_rules || r.atsSummary)) {
+            const atsSummary = r.atsSummary || r.ats_rules || '';
+            const atsExplanations = await window.getAIATSReview('', atsSummary);
+            if (Array.isArray(atsExplanations) && atsExplanations.length) r.ai_ats_explanations = atsExplanations;
+          }
+        } catch (err) {
+          // swallow per-result errors
+        }
+      }
+    } catch (err) {
+      // swallow global errors
+    }
+  })();
 }
 
 function renderResumeList() {
