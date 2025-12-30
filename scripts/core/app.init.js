@@ -39,6 +39,9 @@ let jdText = '';
 let isCandidateMode = false;
 let scanErrors = [];
 
+// Expose a simple currentMode string for AI gating and other consumers
+window.currentMode = isCandidateMode ? 'candidate' : 'recruiter';
+
 const dataHandler = {
   onDataChanged(data) {
     currentData = data;
@@ -251,6 +254,7 @@ document.getElementById('closeErrorBtn').addEventListener('click', () => {
 
 document.getElementById('candidateMode').addEventListener('change', (e) => {
   isCandidateMode = e.target.checked;
+  window.currentMode = isCandidateMode ? 'candidate' : 'recruiter';
   applyModeStyles();
 });
 

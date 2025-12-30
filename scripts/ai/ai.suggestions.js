@@ -4,7 +4,7 @@
 async function getAISuggestions(resumeText, missingSkills, jobDescription, options = {}) {
   try {
     const cfg = window.aiConfig || {};
-    if (!cfg.enabled) return { suggestions: {}, section_recommendations: [] };
+    if (!cfg.enabled || window.currentMode !== 'candidate') return { suggestions: {}, section_recommendations: [] };
 
     // Basic privacy: do not send very large documents; truncate to reasonable size
     const safeResume = typeof resumeText === 'string' ? resumeText.slice(0, 8000) : '';

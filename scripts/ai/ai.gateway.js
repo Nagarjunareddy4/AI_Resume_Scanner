@@ -204,6 +204,16 @@
     try {
       if (!cfg.enabled) return fallbackResult('AI features are disabled');
 
+      // Enforce candidate-only usage at runtime (defense-in-depth)
+      try {
+        if (typeof window !== 'undefined') {
+          if (!window.aiConfig || !window.aiConfig.enabled) return fallbackResult('AI features are disabled');
+          if (window.currentMode !== 'candidate') return fallbackResult('ai_unavailable');
+        }
+      } catch (e) {
+        return fallbackResult('ai_unavailable');
+      }
+
       // Persistent quota check (localStorage-backed)
       try {
         const quotaStatus = canUseAI();

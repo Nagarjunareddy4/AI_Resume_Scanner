@@ -4,7 +4,7 @@
 async function getAIATSReview(resumeText, atsRulesSummary, options = {}) {
   try {
     const cfg = window.aiConfig || {};
-    if (!cfg.enabled) return [];
+    if (!cfg.enabled || window.currentMode !== 'candidate') return [];
 
     const safeResume = typeof resumeText === 'string' ? resumeText.slice(0, 6000) : '';
     const safeSummary = typeof atsRulesSummary === 'string' ? atsRulesSummary.slice(0, 2000) : '';

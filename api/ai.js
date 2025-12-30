@@ -1,6 +1,11 @@
 // api/ai.js
 // Serverless AI proxy endpoint (Vercel-friendly ESM). Does NOT log prompts/responses.
 // Enforces anonymous per-clientId quota using an in-memory store (quota.service.js).
+//
+// Local development:
+// - Create a `.env.local` file (DO NOT commit real keys), e.g.:
+//     OPENAI_API_KEY=sk-your-key-here
+// - Restart `vercel dev` after setting env vars.
 
 import { checkQuota, incrementQuota } from '../services/quota.service.js';
 import { callOpenAI } from '../services/openai.service.js';
@@ -60,6 +65,14 @@ export default async function handler(req, res) {
     const messages = [];
     if (options.system && typeof options.system === 'string') messages.push({ role: 'system', content: options.system });
     messages.push({ role: 'user', content: prompt });
+
+    // Ensure server-side API key is configured for OpenAI usage
+    if (!process.env.OPENAI_API_KEY) {
+      // Gracefully return ai_unavailable when key is missing
+      if (process.env.NODE_ENV !== 'production') console.warn('/api/ai - OPENAI_API_KEY is not set');
+      res.status(500).json({ ok: false, error: 'ai_unavailable' });
+      return;
+    }
 
     // Call OpenAI (server-side) — wrapper handles API key and timeouts
     const openaiResp = await callOpenAI({ model: options.model || process.env.AI_MODEL || 'gpt-4o-mini', messages, max_tokens: requestedMaxTokens, temperature: 0.2 });

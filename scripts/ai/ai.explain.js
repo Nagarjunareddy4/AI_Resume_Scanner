@@ -4,7 +4,7 @@
 async function getAIScoreExplanation(matchScore, skillMatchPercent, atsScore, options = {}) {
   try {
     const cfg = window.aiConfig || {};
-    if (!cfg.enabled) return '';
+    if (!cfg.enabled || window.currentMode !== 'candidate') return '';
 
     const prompt = window.aiPrompts.explainScorePrompt(matchScore, skillMatchPercent, atsScore);
 
