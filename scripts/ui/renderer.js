@@ -84,22 +84,95 @@ function renderCandidateSuggestions(container) {
     </div>
   `;
 
-  // Optional, non-blocking AI: suggestions (Candidate Mode only)
-  (async () => {
-    try {
-      const cfg = window.aiConfig || {};
-      if (!cfg.enabled || !(cfg.features && cfg.features.suggestions)) return;
+  // Candidate-only AI UI (opt-in only, no automatic calls)
+  try {
+    const aiCfg = window.aiConfig || {};
+    if (aiCfg.enabled && aiCfg.features && aiCfg.features.suggestions) {
+      const aiCardHtml = `
+        <div class="p-4 rounded-xl shadow-lg mt-4" style="background: ${surfaceColor};">
+          <div class="flex justify-between items-center">
+            <h4 class="text-lg font-semibold" style="color: ${textColor};">🔬 AI Insights</h4>
+            <button id="aiSuggestionsBtn" class="px-4 py-2 rounded text-sm" style="background: ${primaryColor}; color: white;">
+              Get AI Suggestions (${aiCfg.freeCallsPerDay || 2} free/day)
+            </button>
+          </div>
+          <div id="aiInsightsArea" class="mt-3"></div>
+        </div>
+      `;
 
-      // Use missing skills and job description; do not require resume text to avoid changing core scan flow
-      const suggestions = await window.getAISuggestions('', missingSkills, jdText || '', { /* options */ });
-      if (suggestions && Object.keys(suggestions.suggestions || {}).length > 0) {
-        // store in-memory only; do not persist or change UI automatically
-        latestScan.ai_suggestions = suggestions;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = aiCardHtml;
+      const parent = container.querySelector('.space-y-4') || container;
+      parent.appendChild(wrapper);
+
+      const btn = document.getElementById('aiSuggestionsBtn');
+      const area = document.getElementById('aiInsightsArea');
+
+      // initialize button state based on persistent quota
+      const q = window.canUseAI ? window.canUseAI() : null;
+      if (!q || (q && !q.ok)) {
+        btn.disabled = true;
+        btn.textContent = 'AI unavailable';
+      } else if (q.remaining <= 0) {
+        btn.disabled = true;
+        btn.textContent = 'Free AI limit reached';
       }
-    } catch (e) {
-      // swallow errors (must not break UI)
+
+      btn.addEventListener('click', async function () {
+        try {
+          btn.disabled = true;
+          showToast('Fetching AI suggestions...', 'info');
+
+          // re-check quota
+          const check = window.canUseAI ? window.canUseAI() : { ok: false };
+          if (!check.ok) {
+            showInlineWarning('AI insights are temporarily unavailable.');
+            return;
+          }
+          if (check.remaining <= 0) {
+            showInlineWarning('Free AI limit reached. Resets in 24 hours.');
+            btn.textContent = 'Free AI limit reached';
+            return;
+          }
+
+          const res = await window.getAISuggestions('', missingSkills, jdText || '');
+          if (!res || (!res.suggestions || Object.keys(res.suggestions).length === 0)) {
+            showInlineWarning('AI insights are temporarily unavailable.');
+            btn.disabled = false;
+            return;
+          }
+
+          latestScan.ai_suggestions = res;
+
+          // render suggestions in a simple read-only block
+          const lines = Object.keys(res.suggestions).map(k => `
+            <div class="mb-2">
+              <p class="font-medium" style="color: ${textColor};">${k}</p>
+              <p style="color: ${secondaryColor};">${(res.suggestions[k] || '')
+                .replace(/\n/g, '<br/>')}</p>
+            </div>
+          `).join('<hr class="my-2"/>');
+
+          area.innerHTML = `<div class="p-3 rounded" style="background: ${primaryColor}10;">${lines}</div>`;
+          showToast('AI suggestions loaded', 'success');
+
+          // update button state
+          const newQ = window.canUseAI ? window.canUseAI() : null;
+          if (newQ && newQ.ok && newQ.remaining <= 0) {
+            btn.disabled = true;
+            btn.textContent = 'Free AI limit reached';
+          } else {
+            btn.disabled = false;
+          }
+        } catch (err) {
+          showInlineWarning('AI insights are temporarily unavailable.');
+          btn.disabled = false;
+        }
+      });
     }
-  })();
+  } catch (err) {
+    // swallow errors to avoid breaking UI
+  }
 }
 
 function renderAllResults(container) {

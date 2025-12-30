@@ -13,8 +13,13 @@ const aiConfig = {
     explainScore: true // AI explanation for match scores
   },
 
-  // Free usage: per-session limits
+  // Free usage: per-session limits (short-lived session counters)
   freeCallsPerSession: 2, // free users can make up to 2 AI calls per session
+
+  // Free usage: per-browser quota (persistent, refresh-resistant)
+  freeCallsPerDay: 2, // number of free calls allowed per browser within the quota window
+  quotaResetHours: 24, // how long the quota window lasts (hours)
+  quotaStorageKey: 'ai_quota_v1', // localStorage key to persist quota metadata
 
   // Model selection (cost-efficient)
   model: 'gpt-3.5-turbo',

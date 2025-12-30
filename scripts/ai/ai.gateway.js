@@ -27,6 +27,76 @@
     return { ok: false, error: { message }, data: null, usage: null };
   }
 
+  // LocalStorage-backed quota helpers (privacy-preserving, only metadata stored)
+  function _readQuota() {
+    try {
+      const key = (window.aiConfig && window.aiConfig.quotaStorageKey) || 'ai_quota_v1';
+      const raw = localStorage.getItem(key);
+      if (!raw) return { count: 0, windowStart: 0 };
+      const parsed = JSON.parse(raw);
+      return { count: Number(parsed.count || 0), windowStart: Number(parsed.windowStart || 0) };
+    } catch (err) {
+      // If localStorage is unavailable or corrupt, indicate by returning null
+      return null;
+    }
+  }
+
+  function _writeQuota(q) {
+    try {
+      const key = (window.aiConfig && window.aiConfig.quotaStorageKey) || 'ai_quota_v1';
+      localStorage.setItem(key, JSON.stringify({ count: Number(q.count || 0), windowStart: Number(q.windowStart || 0) }));
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  // Public helper: canUseAI - checks persistent quota and returns remaining calls info
+  function canUseAI() {
+    try {
+      const cfgLocal = window.aiConfig || cfg;
+      const quota = _readQuota();
+      if (!quota) return { ok: false, error: { message: 'storage_unavailable' } };
+      const now = Date.now();
+      const resetMs = (cfgLocal.quotaResetHours || 24) * 3600 * 1000;
+      if (!quota.windowStart || (now - quota.windowStart) > resetMs) {
+        return { ok: true, remaining: Number(cfgLocal.freeCallsPerDay || 2), resetAt: now + resetMs };
+      }
+      const remaining = Math.max(0, Number(cfgLocal.freeCallsPerDay || 2) - Number(quota.count || 0));
+      return { ok: true, remaining, resetAt: quota.windowStart + resetMs };
+    } catch (err) {
+      return { ok: false, error: { message: 'storage_unavailable' } };
+    }
+  }
+
+  // Public helper: incrementAIUsage - increment persistent quota count (call only on successful AI response)
+  function incrementAIUsage() {
+    try {
+      const cfgLocal = window.aiConfig || cfg;
+      const now = Date.now();
+      const resetMs = (cfgLocal.quotaResetHours || 24) * 3600 * 1000;
+      let quota = _readQuota();
+      if (!quota) {
+        // localStorage unavailable
+        return { ok: false, error: { message: 'storage_unavailable' } };
+      }
+      if (!quota.windowStart || (now - quota.windowStart) > resetMs) {
+        quota = { count: 1, windowStart: now };
+      } else {
+        quota.count = (Number(quota.count || 0) + 1);
+      }
+      _writeQuota(quota);
+      const remaining = Math.max(0, Number(cfgLocal.freeCallsPerDay || 2) - Number(quota.count || 0));
+      return { ok: true, remaining, count: quota.count, windowStart: quota.windowStart };
+    } catch (err) {
+      return { ok: false, error: { message: 'storage_unavailable' } };
+    }
+  }
+
+  // Expose quota helpers
+  window.canUseAI = canUseAI;
+  window.incrementAIUsage = incrementAIUsage;
+
   // Internal single-call implementation
   async function _callOpenAI(payload, { useProxy, proxyEndpoint, apiKey, browserFallback, timeoutMs = 60000 } = {}) {
     // Try proxy call first when requested
@@ -86,6 +156,18 @@
   async function callAI(prompt, options = {}) {
     try {
       if (!cfg.enabled) return fallbackResult('AI features are disabled');
+
+      // Persistent quota check (localStorage-backed)
+      try {
+        const quotaStatus = canUseAI();
+        if (!quotaStatus.ok) {
+          // Storage unavailable - block AI to preserve privacy and determinism
+          return fallbackResult('AI unavailable: storage_unavailable');
+        }
+        if (quotaStatus.remaining <= 0) return { ok: false, error: { message: 'quota_exceeded' }, data: null, usage: null };
+      } catch (err) {
+        return fallbackResult('AI unavailable: quota check failed');
+      }
 
       // Rate limiting: minMsBetweenCalls
       const now = Date.now();
@@ -151,6 +233,13 @@
       session.callsThisSession = (session.callsThisSession || 0) + 1;
       session.lastCallTimestamp = Date.now();
       window.__ai_session = session;
+
+      // Persist quota increment (only on successful AI call)
+      try {
+        incrementAIUsage();
+      } catch (e) {
+        // Do not fail if quota persistence fails; swallow errors
+      }
 
       // Optionally parse JSON if requested
       let parsed = null;
