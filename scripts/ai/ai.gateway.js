@@ -8,7 +8,7 @@
     enabled: false,
     requireApiKey: true,
     freeCallsPerSession: 2,
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     maxResponseTokens: 512,
     maxPromptTokens: 1024,
     minMsBetweenCalls: 500,
@@ -197,11 +197,17 @@
     return fallbackResult('No executable AI endpoint configured');
   }
 
+
   // Public API: callAI
   // prompt: string
   // options: { system?: string, parseJson?: boolean, model?: string, maxResponseTokens?: number, proxyEndpoint?: string, useProxy?: boolean, browserFallback?: boolean, apiKey?: string }
   async function callAI(prompt, options = {}) {
     try {
+
+        if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+            return { ok: false, error: 'empty_prompt' };
+        }
+
       if (!cfg.enabled) return fallbackResult('AI features are disabled');
 
       // Enforce candidate-only usage at runtime (defense-in-depth)

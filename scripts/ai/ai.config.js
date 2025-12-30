@@ -22,7 +22,7 @@ const aiConfig = {
   quotaStorageKey: 'ai_quota_v1', // localStorage key to persist quota metadata
 
   // Model selection (cost-efficient)
-  model: 'gpt-3.5-turbo',
+  model: 'gpt-4o-mini',
   maxResponseTokens: 512, // soft token limit for responses
   maxPromptTokens: 1024,  // soft token limit for prompt
 
