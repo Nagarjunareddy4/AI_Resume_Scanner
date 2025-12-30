@@ -97,6 +97,7 @@ function renderCandidateSuggestions(container) {
             </button>
           </div>
           <div id="aiInsightsArea" class="mt-3"></div>
+          <div id="aiMessage" class="hidden text-sm mt-2" style="color: ${secondaryColor};"></div>
         </div>
       `;
 
@@ -105,46 +106,63 @@ function renderCandidateSuggestions(container) {
       const parent = container.querySelector('.space-y-4') || container;
       parent.appendChild(wrapper);
 
-      const btn = document.getElementById('aiSuggestionsBtn');
-      const area = document.getElementById('aiInsightsArea');
+      const btn = wrapper.querySelector('#aiSuggestionsBtn');
+      const area = wrapper.querySelector('#aiInsightsArea');
+      const msg = wrapper.querySelector('#aiMessage');
+
+      function showLocalAIMessage(text) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.classList.remove('hidden');
+      }
+      function hideLocalAIMessage() {
+        if (!msg) return;
+        msg.textContent = '';
+        msg.classList.add('hidden');
+      }
 
       // initialize button state based on persistent quota
       const q = window.canUseAI ? window.canUseAI() : null;
       if (!q || (q && !q.ok)) {
         btn.disabled = true;
         btn.textContent = 'AI unavailable';
+        showLocalAIMessage('AI insights are temporarily unavailable.');
       } else if (q.remaining <= 0) {
         btn.disabled = true;
         btn.textContent = 'Free AI limit reached';
+        showLocalAIMessage('Free AI limit reached. Resets in 24 hours.');
       }
 
       btn.addEventListener('click', async function () {
         try {
           btn.disabled = true;
+          hideLocalAIMessage();
           showToast('Fetching AI suggestions...', 'info');
 
           // re-check quota
           const check = window.canUseAI ? window.canUseAI() : { ok: false };
           if (!check.ok) {
-            showInlineWarning('AI insights are temporarily unavailable.');
+            showLocalAIMessage('AI insights are temporarily unavailable.');
             return;
           }
           if (check.remaining <= 0) {
-            showInlineWarning('Free AI limit reached. Resets in 24 hours.');
+            showLocalAIMessage('Free AI limit reached. Resets in 24 hours.');
             btn.textContent = 'Free AI limit reached';
+            btn.disabled = true;
             return;
           }
 
           const res = await window.getAISuggestions('', missingSkills, jdText || '');
           if (!res || (!res.suggestions || Object.keys(res.suggestions).length === 0)) {
-            showInlineWarning('AI insights are temporarily unavailable.');
+            showLocalAIMessage('AI insights are temporarily unavailable.');
             btn.disabled = false;
             return;
           }
 
           latestScan.ai_suggestions = res;
 
-          // render suggestions in a simple read-only block
+          // hide any previous message and render suggestions in a simple read-only block
+          hideLocalAIMessage();
           const lines = Object.keys(res.suggestions).map(k => `
             <div class="mb-2">
               <p class="font-medium" style="color: ${textColor};">${k}</p>
@@ -161,11 +179,12 @@ function renderCandidateSuggestions(container) {
           if (newQ && newQ.ok && newQ.remaining <= 0) {
             btn.disabled = true;
             btn.textContent = 'Free AI limit reached';
+            showLocalAIMessage('Free AI limit reached. Resets in 24 hours.');
           } else {
             btn.disabled = false;
           }
         } catch (err) {
-          showInlineWarning('AI insights are temporarily unavailable.');
+          showLocalAIMessage('AI insights are temporarily unavailable.');
           btn.disabled = false;
         }
       });
