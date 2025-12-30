@@ -16,6 +16,22 @@
     logResponses: false
   };
 
+  // Stable anonymous client identifier (stored in localStorage)
+  const CLIENT_ID_KEY = (window.aiConfig && window.aiConfig.clientIdStorageKey) || 'ai_client_id';
+  let aiClientId = null;
+  try {
+    aiClientId = localStorage.getItem(CLIENT_ID_KEY);
+    if (!aiClientId && typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      aiClientId = crypto.randomUUID();
+      localStorage.setItem(CLIENT_ID_KEY, aiClientId);
+    }
+  } catch (err) {
+    // localStorage might be unavailable (privacy mode) — leave aiClientId null
+    aiClientId = null;
+  }
+  // Expose for debugging (non-sensitive)
+  window.aiClientId = aiClientId;
+
   // Minimal token estimator
   function estimateTokens(text = '') {
     // Rough heuristic: ~4 chars per token
@@ -98,15 +114,34 @@
   window.incrementAIUsage = incrementAIUsage;
 
   // Internal single-call implementation
-  async function _callOpenAI(payload, { useProxy, proxyEndpoint, apiKey, browserFallback, timeoutMs = 60000 } = {}) {
+  async function _callOpenAI(payload, { useProxy, proxyEndpoint, apiKey, browserFallback, timeoutMs = 60000 } = {}, prompt = null) {
     // Try proxy call first when requested
     if (useProxy && proxyEndpoint) {
       try {
+        // Build proxy payload (do not include resume/JD content here; prompt is safe metadata)
+        const proxyBody = {
+          clientId: aiClientId,
+          prompt: prompt || (payload && payload.messages ? payload.messages.map(m => m.content).join('\n') : ''),
+          options: {
+            model: payload.model,
+            max_tokens: payload.max_tokens,
+            temperature: payload.temperature
+          }
+        };
+
         const resp = await fetch(proxyEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(proxyBody)
         });
+
+        if (resp.status === 429) {
+          return fallbackResult('quota_exceeded');
+        }
+
+        if (resp.status >= 500) {
+          return fallbackResult('ai_unavailable');
+        }
 
         if (!resp.ok) {
           return fallbackResult(`Proxy request failed with status ${resp.status}`);
@@ -125,16 +160,28 @@
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeoutMs);
 
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+        // attach client id as header (non-sensitive)
+        if (aiClientId) headers['X-AI-Client-Id'] = aiClientId;
+
         const resp = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
+          headers,
           signal: controller.signal,
           body: JSON.stringify(payload)
         });
         clearTimeout(id);
+
+        if (resp.status === 429) {
+          return fallbackResult('quota_exceeded');
+        }
+
+        if (resp.status >= 500) {
+          return fallbackResult('ai_unavailable');
+        }
 
         if (!resp.ok) {
           return fallbackResult(`OpenAI API returned status ${resp.status}`);
@@ -210,7 +257,7 @@
 
       // Enforce single try only (no retries)
       const useProxy = options.useProxy !== undefined ? options.useProxy : Boolean(proxyEndpoint);
-      const res = await _callOpenAI(payload, { useProxy, proxyEndpoint, apiKey, browserFallback });
+      const res = await _callOpenAI(payload, { useProxy, proxyEndpoint, apiKey, browserFallback }, prompt);
 
       if (!res.ok) return res; // bubble up fallback
 
